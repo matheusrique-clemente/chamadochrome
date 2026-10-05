@@ -64,6 +64,32 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
 #toast.on{opacity:1}
 @media(max-width:520px){.row{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+:root{--ag:#8a5a00;--ag-bg:#fdf0d5}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--ag:#f2c36b;--ag-bg:#43330f}}
+.b-ag{background:var(--ag-bg);color:var(--ag)}
+.aviso{margin:0 0 12px;padding:10px 14px;background:var(--ag-bg);color:var(--ag);border-radius:var(--r);font-weight:600;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#cal{position:fixed;right:0;top:150px;z-index:20;display:flex;flex-direction:row-reverse;align-items:flex-start;padding-right:env(safe-area-inset-right,0px)}
+.caltab{width:46px;height:46px;padding:0;font-size:1.3rem;border-radius:12px 0 0 12px;border-right:0;box-shadow:0 2px 8px rgba(0,0,0,.2);flex:none}
+.calpanel{display:none;width:min(330px,calc(100vw - 56px));max-height:calc(100vh - 170px);overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.28);padding:12px;margin-right:-1px}
+#cal:hover .calpanel,#cal.pin .calpanel{display:block}
+#cal:has(:focus-visible) .calpanel{display:block}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cw{font-size:.75rem;font-weight:700;color:var(--mut);padding:4px 0}
+.cd{padding:4px 0;min-height:40px;border-color:transparent;background:transparent;border-radius:8px;font-weight:600;line-height:1.1}
+.cd:hover{background:var(--bg)}
+.cd.hj{border-color:var(--brand)}
+.cd.sel{background:var(--brand);border-color:var(--brand);color:#fff}
+.cd .q{display:block;font-size:.7rem;font-weight:700;color:var(--ag)}
+.cd .q::before{content:"● "}
+.cd.sel .q{color:#fff}
+.callist{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.callist h4{margin:0 0 6px;font-size:.95rem}
+.callist ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.callist li{background:var(--bg);border-radius:8px;padding:6px 10px;font-size:.9rem}
+.callist small{color:var(--mut)}
+.calleg{margin:8px 0 0;font-size:.8rem;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -86,6 +112,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
   </section>
 
   <h2 id="tituloCarrinhos">Carrinhos</h2>
+  <p class="aviso" id="avisoData" hidden></p>
   <section class="carts" id="carts"></section>
 
   <h2>Histórico de retiradas</h2>
@@ -95,6 +122,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     <select id="filtro" aria-label="Filtrar por status">
       <option value="todos">Todos os registros</option>
       <option value="uso">Em uso</option>
+      <option value="agendado">Agendados</option>
       <option value="devolvido">Devolvidos</option>
     </select>
     <button id="btnCsv">Exportar CSV</button>
@@ -147,6 +175,20 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     </div>
   </form>
 </dialog>
+<div id="cal">
+  <button type="button" class="caltab" data-cal="tab" aria-label="Calendário de agendamentos" title="Calendário de agendamentos">📅</button>
+  <div class="calpanel" role="dialog" aria-label="Calendário de agendamentos">
+    <div class="calhead">
+      <button type="button" class="sm" data-cal="prev" aria-label="Mês anterior">‹</button>
+      <strong id="calTitulo"></strong>
+      <button type="button" class="sm" data-cal="next" aria-label="Próximo mês">›</button>
+    </div>
+    <div class="calgrid" id="calGrid"></div>
+    <p class="calleg">● = quantidade de agendamentos no turno selecionado</p>
+    <div class="callist" id="calLista"></div>
+    <div class="foot"><button type="button" class="sm" data-cal="hoje">Ir para hoje</button></div>
+  </div>
+</div>
 <div id="toast" role="status"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -179,7 +221,7 @@ var SENHA = '';
   }
   /* Futuro: os 240 Chromebooks (CB-001..CB-240) podem virar a coleção "equipamentos" neste mesmo banco. */
 
-  var turnoAtual = (new Date().getHours() < 12 ? 'matutino' : 'vespertino'), aulaAba = 'todas', registros = [], db = null, colecao = null, editandoId = null, devId = null;
+  var turnoAtual = (new Date().getHours() < 12 ? 'matutino' : 'vespertino'), aulaAba = 'todas', dataVisao = null, calMes = null, registros = [], db = null, colecao = null, editandoId = null, devId = null;
   var holder = 't' + Math.random().toString(36).slice(2);
 
   var $ = function (id) { return document.getElementById(id); };
@@ -205,10 +247,23 @@ var SENHA = '';
     return letra <= 'B' ? 'matutino' : 'vespertino';
   }
   function turnoDe(r) { return r.turno || detectarTurno(r.turma) || 'matutino'; }
-  function registroAberto(id, aula, turno) {
-    var a = aula || (aulaAba === 'todas' ? 0 : parseInt(aulaAba, 10)), t = turno || turnoAtual;
-    for (var i = 0; i < registros.length; i++) if (registros[i].carrinhoId === id && !devolvido(registros[i]) && turnoDe(registros[i]) === t && (!a || registros[i].aula === a)) return registros[i];
+  /* Data que está sendo visualizada (null = hoje, acompanha o relógio). */
+  function diaVisao() { return dataVisao || hoje(); }
+  /* O carrinho está ocupado no dia d? Agendamento futuro só ocupa o PRÓPRIO dia.
+     Retirada já feita (data <= hoje) e não devolvida continua ocupando, pois o carrinho está fora da sala. */
+  function ativoNoDia(r, d) {
+    if (devolvido(r)) return false;
+    return r.data === d;
+  }
+  function ocupado(id, turno, dia, aula) {
+    for (var i = 0; i < registros.length; i++) {
+      var r = registros[i];
+      if (r.carrinhoId === id && ativoNoDia(r, dia) && turnoDe(r) === turno && (!aula || r.aula === aula)) return r;
+    }
     return null;
+  }
+  function registroAberto(id) {
+    return ocupado(id, turnoAtual, diaVisao(), aulaAba === 'todas' ? 0 : parseInt(aulaAba, 10));
   }
   function achar(id) { for (var i = 0; i < registros.length; i++) if (registros[i].id === id) return registros[i]; return null; }
   function avisar(m) { elToast.textContent = m; elToast.classList.add('on'); clearTimeout(avisar.t); avisar.t = setTimeout(function () { elToast.classList.remove('on'); }, 3000); }
@@ -218,32 +273,40 @@ var SENHA = '';
     if (k === 'quota_exceeded') return 'Limite de registros atingido. Exclua registros antigos.';
     return 'Não foi possível salvar (' + (k || (e && e.message) || 'erro') + '). Tente de novo.';
   }
-  function badge(r) { return devolvido(r) ? '<span class="badge b-dev">Devolvido</span>' : '<span class="badge b-bad">🔴 Em uso</span>'; }
+  function badge(r) {
+    if (devolvido(r)) return '<span class="badge b-dev">Devolvido</span>';
+    if (r.data > hoje()) return '<span class="badge b-ag">📅 Agendado</span>';
+    return '<span class="badge b-bad">🔴 Em uso</span>';
+  }
 
   function renderPainel() {
-    $('tituloCarrinhos').textContent = 'Carrinhos · ' + NOME_TURNO[turnoAtual] + (aulaAba === 'todas' ? '' : ' · ' + aulaAba + 'ª aula');
+    $('tituloCarrinhos').textContent = 'Carrinhos · ' + NOME_TURNO[turnoAtual] + (aulaAba === 'todas' ? '' : ' · ' + aulaAba + 'ª aula') + (dataVisao ? ' · ' + fmtData(dataVisao) : '');
+    var av = $('avisoData');
+    if (dataVisao) { av.hidden = false; av.innerHTML = '📅 Mostrando a situação de <strong>' + fmtData(dataVisao) + '</strong> <button type="button" class="sm" data-cal="hoje">Voltar para hoje</button>'; }
+    else av.hidden = true;
     var fora = 0, cb = 0;
     var bloq = 0;
-    carrinhos.forEach(function (car) { var r = registroAberto(car.id); if (r) { fora++; cb += r.quantidade; } else if (bloqueado(car.id, hoje())) bloq++; });
+    carrinhos.forEach(function (car) { var r = registroAberto(car.id); if (r) { fora++; cb += r.quantidade; } else if (bloqueado(car.id, diaVisao())) bloq++; });
     $('stDisp').textContent = NUM - fora - bloq; $('stFora').textContent = fora; $('stCb').textContent = cb; $('stTotal').textContent = TOTAL;
   }
   function renderCarrinhos() {
     elCarts.innerHTML = carrinhos.map(function (car) {
-      var r = registroAberto(car.id), ini = (car.id - 1) * POR + 1, fim = car.id * POR;
+      var r = registroAberto(car.id), ini = (car.id - 1) * POR + 1, fim = car.id * POR; var ag = !!r && r.data > hoje();
       var faixa = 'CB-' + String(ini).padStart(3, '0') + ' a CB-' + String(fim).padStart(3, '0');
-      if (!r && bloqueado(car.id, hoje())) return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p><span class="badge b-dev">🔒 Indisponível hoje</span></p><p>Usado em atividades às segundas e terças. Liberado para retirada de quarta em diante.</p></article>';
+      if (!r && bloqueado(car.id, diaVisao())) return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p><span class="badge b-dev">🔒 Indisponível ' + (diaVisao() === hoje() ? 'hoje' : 'neste dia') + '</span></p><p>Usado em atividades às segundas e terças. Liberado para retirada de quarta em diante.</p></article>';
       if (!r) return '<article class="cart"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p><span class="badge b-ok">🟢 Disponível</span></p>' +
         '<div class="btn"><button class="primary" data-acao="retirar" data-carrinho="' + car.id + '"' + (db ? '' : ' disabled') + '>Retirar carrinho</button></div></article>';
-      return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p><span class="badge b-bad">🔴 Em uso</span></p>' +
+      return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p>' + (ag ? '<span class="badge b-ag">📅 Agendado</span>' : '<span class="badge b-bad">🔴 Em uso</span>') + '</p>' +
         '<p>Turma: <strong>' + esc(r.turma) + '</strong></p><p>Responsável: <strong>' + esc(r.responsavel) + '</strong></p>' +
-        '<p><strong>' + r.quantidade + '</strong> Chromebooks retirados</p><p>Retirada: <strong>' + rotulo(r.data, r.aula) + '</strong></p>' +
-        '<div class="btn"><button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button></div></article>';
+        '<p><strong>' + r.quantidade + '</strong> Chromebooks ' + (ag ? 'reservados' : 'retirados') + '</p><p>' + (ag ? 'Retirada prevista' : 'Retirada') + ': <strong>' + rotulo(r.data, r.aula) + '</strong></p>' +
+        '<div class="btn">' + (ag ? '<button data-acao="editar" data-id="' + r.id + '">Editar agendamento</button>' : '<button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') + '</div></article>';
     }).join('');
   }
   function filtrados() {
     var q = elBusca.value.trim().toLowerCase(), f = elFiltro.value;
     return registros.filter(function (r) {
-      if (f === 'uso' && devolvido(r)) return false;
+      if (f === 'uso' && (devolvido(r) || r.data > hoje())) return false;
+      if (f === 'agendado' && (devolvido(r) || r.data <= hoje())) return false;
       if (f === 'devolvido' && !devolvido(r)) return false;
       if (turnoDe(r) !== turnoAtual) return false;
       if (aulaAba !== 'todas' && String(r.aula) !== aulaAba) return false;
@@ -256,7 +319,7 @@ var SENHA = '';
     elTbody.innerHTML = lista.map(function (r) {
       return '<tr><td>' + nomeCarrinho(r.carrinhoId) + '</td><td>' + esc(r.turma) + (r.observacao ? '<br><small style="color:var(--mut)">' + esc(r.observacao) + '</small>' : '') + '</td>' +
         '<td>' + esc(r.responsavel) + '</td><td>' + r.quantidade + '</td><td>' + rotulo(r.data, r.aula) + '</td><td>' + rotulo(r.devolucaoData, r.devolucaoAula) + '</td><td>' + badge(r) + '</td>' +
-        '<td class="act">' + (devolvido(r) ? '' : '<button class="sm primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') +
+        '<td class="act">' + ((devolvido(r) || r.data > hoje()) ? '' : '<button class="sm primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') +
         '<button class="sm" data-acao="editar" data-id="' + r.id + '">Editar</button><button class="sm danger" data-acao="excluir" data-id="' + r.id + '">Excluir</button></td></tr>';
     }).join('');
   }
@@ -284,13 +347,66 @@ var SENHA = '';
     var b = ev.target.closest('button[data-turno]'); if (!b) return;
     turnoAtual = b.getAttribute('data-turno'); renderTudo();
   });
-  function renderTudo() { renderTurnos(); renderPainel(); renderCarrinhos(); renderAbas(); renderTabela(); }
+  function renderTudo() { renderTurnos(); renderPainel(); renderCarrinhos(); renderAbas(); renderTabela(); renderCal(); }
+
+  /* ---------- Calendário lateral ---------- */
+  var MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  function p2(n) { return String(n).padStart(2, '0'); }
+  function irParaDia(d) {
+    dataVisao = d === hoje() ? null : d;
+    var p = d.split('-'); calMes = { a: +p[0], m: +p[1] - 1 };
+    renderTudo();
+  }
+  function renderCal() {
+    var dv = diaVisao(), h = hoje();
+    if (!calMes) { var p = dv.split('-'); calMes = { a: +p[0], m: +p[1] - 1 }; }
+    $('calTitulo').textContent = MESES[calMes.m] + ' ' + calMes.a;
+    var cont = {};
+    registros.forEach(function (r) { if (turnoDe(r) === turnoAtual) cont[r.data] = (cont[r.data] || 0) + 1; });
+    var primeiro = new Date(calMes.a, calMes.m, 1).getDay(), dias = new Date(calMes.a, calMes.m + 1, 0).getDate(), html = '';
+    ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].forEach(function (l) { html += '<span class="cw" aria-hidden="true">' + l + '</span>'; });
+    for (var i = 0; i < primeiro; i++) html += '<span></span>';
+    for (var d = 1; d <= dias; d++) {
+      var s = calMes.a + '-' + p2(calMes.m + 1) + '-' + p2(d), n = cont[s] || 0;
+      html += '<button type="button" class="cd' + (s === h ? ' hj' : '') + (s === dv ? ' sel' : '') + '" data-dia="' + s + '" aria-pressed="' + (s === dv) + '" aria-label="' + fmtData(s) + (n ? ', ' + n + ' agendamento(s)' : '') + '">' + d + (n ? '<span class="q">' + n + '</span>' : '') + '</button>';
+    }
+    $('calGrid').innerHTML = html;
+    var lista = registros.filter(function (r) { return turnoDe(r) === turnoAtual && r.data === dv; })
+      .sort(function (a, b) { return a.aula - b.aula; });
+    $('calLista').innerHTML = '<h4>' + (dv === h ? 'Hoje' : fmtData(dv)) + ' · ' + NOME_TURNO[turnoAtual] + '</h4>' +
+      (lista.length ? '<ul>' + lista.map(function (r) {
+        return '<li><strong>' + r.aula + 'ª aula</strong> · ' + nomeCarrinho(r.carrinhoId) + ' · ' + esc(r.turma) + '<br><small>' + esc(r.responsavel) + (devolvido(r) ? ' · devolvido' : (r.data > h ? ' · agendado' : '')) + '</small></li>';
+      }).join('') + '</ul>' : '<p class="sub">Nenhum agendamento neste dia.</p>');
+  }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-cal]');
+    if (t) {
+      var a = t.getAttribute('data-cal');
+      if (a === 'prev' || a === 'next') {
+        calMes.m += a === 'next' ? 1 : -1;
+        if (calMes.m < 0) { calMes.m = 11; calMes.a--; } else if (calMes.m > 11) { calMes.m = 0; calMes.a++; }
+        renderCal();
+      } else if (a === 'hoje') irParaDia(hoje());
+      else if (a === 'tab') $('cal').classList.toggle('pin');
+      return;
+    }
+    var d = ev.target.closest('[data-dia]');
+    if (d) {
+      var dia = d.getAttribute('data-dia'); irParaDia(dia);
+      var nb = document.querySelector('.cd[data-dia="' + dia + '"]'); if (nb) nb.focus();
+      return;
+    }
+    if (!ev.target.closest('#cal')) $('cal').classList.remove('pin');
+  });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') { $('cal').classList.remove('pin'); if ($('cal').contains(document.activeElement)) document.activeElement.blur(); }
+  });
 
   /* ---------- Formulário de retirada / edição ---------- */
   function montarOpcoes(reg, selecionado) {
     var ops = '', atual = selecionado || parseInt(elFCarrinho.value, 10) || 0;
     carrinhos.forEach(function (car) {
-      if (reg ? car.id === reg.carrinhoId : (!registroAberto(car.id, 0, elFTurnoSel.value) && !bloqueado(car.id, elFData.value))) ops += '<option value="' + car.id + '">' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')</option>';
+      if (reg ? car.id === reg.carrinhoId : (!ocupado(car.id, elFTurnoSel.value, elFData.value, parseInt(elFAula.value, 10) || 0) && !bloqueado(car.id, elFData.value))) ops += '<option value="' + car.id + '">' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')</option>';
     });
     elFCarrinho.innerHTML = ops || '<option value="">Nenhum carrinho disponível nesta data</option>';
     if (atual && ops.indexOf('value="' + atual + '"') !== -1) elFCarrinho.value = atual;
@@ -298,10 +414,12 @@ var SENHA = '';
   }
   elFData.addEventListener('change', function () { if (editandoId === null) montarOpcoes(null); });
   elFTurnoSel.addEventListener('change', function () { if (editandoId === null) montarOpcoes(null); });
+  elFAula.addEventListener('change', function () { if (editandoId === null) montarOpcoes(null); });
   function abrirForm(carrinhoId, reg) {
     editandoId = reg ? reg.id : null; elFErro.textContent = ''; elForm.reset();
-    elFData.value = reg ? reg.data : hoje();
+    elFData.value = reg ? reg.data : diaVisao();
     elFTurnoSel.value = reg ? turnoDe(reg) : turnoAtual;
+    if (!reg && aulaAba !== 'todas') elFAula.value = aulaAba;
     if (!montarOpcoes(reg, carrinhoId)) { avisar('Nenhum carrinho disponível agora.'); return; }
     elFCarrinho.disabled = !!reg;
     if (reg) {
@@ -341,11 +459,11 @@ var SENHA = '';
         await colecao.doc(editandoId).update(corpo);
         elDlg.close(); avisar('Registro atualizado.'); return;
       }
-      if (registroAberto(id, aulaAba === 'todas' ? 0 : aula, turno)) { elFErro.textContent = nomeCarrinho(id) + ' já está em uso no ' + NOME_TURNO[turno] + '.'; return; }
+      if (ocupado(id, turno, data, aula)) { elFErro.textContent = nomeCarrinho(id) + ' já está reservado em ' + fmtData(data) + ' na ' + aula + 'ª aula (' + NOME_TURNO[turno] + ').'; return; }
       corpo.devolucaoData = null; corpo.devolucaoAula = null; corpo.criadoEm = Date.now();
       await colecao.add(corpo);
       turnoAtual = turno; aulaAba = String(aula); renderTudo();
-      elDlg.close(); avisar(nomeCarrinho(id) + ' retirado por ' + turma + ' (' + NOME_TURNO[turno] + ').');
+      elDlg.close(); avisar(nomeCarrinho(id) + (data > hoje() ? ' agendado para ' + fmtData(data) + ' por ' : ' retirado por ') + turma + ' (' + NOME_TURNO[turno] + ').');
     } catch (e) { elFErro.textContent = erroEscrita(e); }
     finally { elBtnSalvar.disabled = false; }
   });
