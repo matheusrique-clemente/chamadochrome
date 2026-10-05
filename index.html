@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carrinhos de Chromebooks – Registro online</title>
 <style>
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f5f4;--card:#fff;--ink:#15282b;--mut:#5d6f72;--line:#dbe3e1;--brand:#0f5c63;--brand-d:#0a4248;
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f5f4;--card:#fff;--ink:#15282b;--mut:#5d6f72;--line:#dbe3e1;--brand:#0f5c63;--brand-d:#0a4248;--box-border-color:#dbe3e1;--box-border-width:1px;--box-border-style:solid;--box-radius:10px;
 --ok:#167a3e;--ok-bg:#dff3e5;--bad:#b42318;--bad-bg:#fde4e1;--dev:#45555a;--dev-bg:#e6ebea;--r:12px}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a1c;--card:#172427;--ink:#e8f0ef;--mut:#9bb0b3;--line:#2a3c3f;--brand:#3aa7b0;--brand-d:#2b8c95;
 --ok:#6fdc97;--ok-bg:#16392a;--bad:#ff9b8f;--bad-bg:#47201c;--dev:#b4c4c6;--dev-bg:#26373a}}
@@ -13,12 +13,14 @@
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
 header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
-h1{font-size:1.6rem;margin:0}h2{font-size:1.15rem;margin:28px 0 12px}
-.sub{color:var(--mut);margin:2px 0 0}
+h1{font-size:1.6rem;margin:0;display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+h2{font-size:1.15rem;margin:28px 0 12px;display:block;width:max-content;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:7px 12px}
+.sub{color:var(--mut);margin:4px 0 0;display:table;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 9px}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 14px;font-weight:600}
 button:hover{border-color:var(--brand)}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--brand);outline-offset:1px}
 .primary{background:var(--brand);border-color:var(--brand);color:#fff}.primary:hover{background:var(--brand-d)}
+.header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cor-fundo{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-weight:600}.cor-fundo input[type=color]{width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px;background:transparent;cursor:pointer}.cor-fundo button{padding:5px 8px;font-size:.85rem}.bordas-controle{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:var(--box-border-width) var(--box-border-style) var(--box-border-color);border-radius:var(--box-radius);padding:7px 10px;font-weight:600}.bordas-controle label{display:flex;align-items:center;gap:5px;font-size:.88rem}.bordas-controle input[type=color]{width:30px;height:28px;padding:2px;border:1px solid var(--line);border-radius:6px;background:transparent;cursor:pointer}.bordas-controle input[type=range]{width:75px;padding:0}.bordas-controle select{width:auto;padding:5px 7px;border-radius:7px}.bordas-controle output{min-width:28px;text-align:center;font-size:.82rem}.caixa-personalizavel{border:var(--box-border-width) var(--box-border-style) var(--box-border-color)!important;border-radius:var(--box-radius)!important}.stat,.tablebox,dialog,h1,h2,.sub,.dica,.aviso,.calpanel,input,select,textarea,.cor-fundo{border-color:var(--box-border-color)!important;border-radius:var(--box-radius)!important}.stat,.tablebox,dialog,h1,h2,.sub,.dica,.aviso,.calpanel,input,select,textarea,.cor-fundo{border-style:var(--box-border-style)!important;border-width:var(--box-border-width)!important}.cart{border-color:var(--box-border-color)!important;border-style:var(--box-border-style)!important;border-width:var(--box-border-width)!important;border-left:6px solid var(--ok)!important}
 .danger{color:var(--bad)}.sm{padding:6px 10px;font-size:.9rem}
 button:disabled{opacity:.5;cursor:not-allowed}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
@@ -46,7 +48,7 @@ input,select,textarea{font:inherit;color:var(--ink);background:var(--card);borde
 .turno .n{background:var(--bg);color:var(--mut);border-radius:99px;padding:0 8px;font-size:.8rem;font-weight:700}
 .turno[aria-selected="true"]{background:var(--brand);color:#fff}
 .turno[aria-selected="true"] .n{background:rgba(255,255,255,.25);color:#fff}
-.dica{font-weight:500;font-size:.85rem;color:var(--mut)}
+.dica{font-weight:500;font-size:.85rem;color:var(--mut);display:inline-block;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:5px 9px}
 .tablebox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:860px}
 th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -70,7 +72,12 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
 .b-ag{background:var(--ag-bg);color:var(--ag)}
 .aviso{margin:0 0 12px;padding:10px 14px;background:var(--ag-bg);color:var(--ag);border-radius:var(--r);font-weight:600;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 #cal{position:fixed;right:0;top:150px;z-index:20;display:flex;flex-direction:row-reverse;align-items:flex-start;padding-right:env(safe-area-inset-right,0px)}
-.caltab{width:46px;height:46px;padding:0;font-size:1.3rem;border-radius:12px 0 0 12px;border-right:0;box-shadow:0 2px 8px rgba(0,0,0,.2);flex:none}
+.caltab,.customtab{width:46px;height:46px;padding:0;font-size:1.3rem;border-radius:12px 0 0 12px;border-right:0;box-shadow:0 2px 8px rgba(0,0,0,.2);flex:none}.customtab{margin-top:8px}
+#custom{position:fixed;right:0;top:210px;z-index:19;display:flex;flex-direction:row-reverse;align-items:flex-start;padding-right:env(safe-area-inset-right,0px)}
+.custompanel{display:none;width:min(360px,calc(100vw - 56px));max-height:calc(100vh - 230px);overflow-y:auto;background:#ffffff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.28);padding:14px;margin-right:-1px}
+#custom:hover .custompanel,#custom.pin .custompanel{display:block}
+#custom:has(:focus-visible) .custompanel{display:block}
+.customtitle{font-weight:800;font-size:1.05rem;margin:0 0 4px}.customdesc{font-size:.82rem;color:var(--mut);margin:0 0 12px}.customsection{background:#ffffff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:10px}.customsection h4{margin:0 0 8px;font-size:.9rem}.customrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:8px 0}.customrow label{font-size:.88rem;font-weight:600}.customrow input[type=color]{width:38px;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px}.customrow input[type=range]{width:145px}.customrow select{width:145px;padding:6px 8px}.customrow output{font-size:.8rem;color:var(--mut);min-width:42px;text-align:right}.customreset{width:100%;margin-top:10px}
 .calpanel{display:none;width:min(330px,calc(100vw - 56px));max-height:calc(100vh - 170px);overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.28);padding:12px;margin-right:-1px}
 #cal:hover .calpanel,#cal.pin .calpanel{display:block}
 #cal:has(:focus-visible) .calpanel{display:block}
@@ -101,7 +108,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
       <p class="sub">Sala de informática · registro online por carrinho e aula</p>
       <p class="sub" id="conexao">Conectando ao registro online…</p>
     </div>
-    <button class="primary" id="btnNova" disabled>+ Nova retirada</button>
+    <div class="header-actions"><button class="primary" id="btnNova" disabled>+ Nova retirada</button></div>
   </header>
 
   <section class="stats" aria-label="Resumo">
@@ -187,6 +194,26 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     <p class="calleg">● = quantidade de agendamentos no turno selecionado</p>
     <div class="callist" id="calLista"></div>
     <div class="foot"><button type="button" class="sm" data-cal="hoje">Ir para hoje</button></div>
+  </div>
+</div>
+<div id="custom">
+  <button type="button" class="customtab" data-custom="tab" aria-label="Personalizar aparência" title="Personalizar aparência">🎨</button>
+  <div class="custompanel" role="dialog" aria-label="Personalização do site">
+    <h3 class="customtitle">🎨 Personalização</h3>
+    <p class="customdesc">Essas opções ficam aqui em uma aba separada e não ocupam espaço no site.</p>
+    <div class="customsection">
+      <h4>Fundo</h4>
+      <div class="customrow"><label for="corFundo">Cor do fundo</label><input type="color" id="corFundo" value="#f3f5f4" aria-label="Escolher cor de fundo"></div>
+    </div>
+    <div class="customsection">
+      <h4>Bordas das caixas</h4>
+      <div class="customrow"><label for="corBorda">Cor</label><input type="color" id="corBorda" value="#dbe3e1" aria-label="Cor das bordas"></div>
+      <div class="customrow"><label for="espBorda">Espessura</label><div><input type="range" id="espBorda" min="0" max="6" value="1" step="1" aria-label="Espessura das bordas"> <output id="valorEspBorda">1px</output></div></div>
+      <div class="customrow"><label for="raioBorda">Arredondamento</label><div><input type="range" id="raioBorda" min="0" max="30" value="10" step="1" aria-label="Arredondamento das bordas"> <output id="valorRaioBorda">10px</output></div></div>
+      <div class="customrow"><label for="estiloBorda">Estilo</label><select id="estiloBorda" aria-label="Estilo das bordas"><option value="solid">Sólida</option><option value="dashed">Tracejada</option><option value="dotted">Pontilhada</option><option value="double">Dupla</option></select></div>
+    </div>
+    <button type="button" id="btnResetCor" class="customreset">↩ Restaurar fundo</button>
+    <button type="button" id="btnResetBordas" class="customreset">↩ Restaurar bordas</button>
   </div>
 </div>
 <div id="toast" role="status"></div>
@@ -379,6 +406,12 @@ var SENHA = '';
       }).join('') + '</ul>' : '<p class="sub">Nenhum agendamento neste dia.</p>');
   }
   document.addEventListener('click', function (ev) {
+    var c = ev.target.closest('[data-custom]');
+    if (c) {
+      if (c.getAttribute('data-custom') === 'tab') $('custom').classList.toggle('pin');
+      return;
+    }
+    if (!ev.target.closest('#custom')) $('custom').classList.remove('pin');
     var t = ev.target.closest('[data-cal]');
     if (t) {
       var a = t.getAttribute('data-cal');
@@ -399,7 +432,7 @@ var SENHA = '';
     if (!ev.target.closest('#cal')) $('cal').classList.remove('pin');
   });
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape') { $('cal').classList.remove('pin'); if ($('cal').contains(document.activeElement)) document.activeElement.blur(); }
+    if (ev.key === 'Escape') { $('cal').classList.remove('pin'); $('custom').classList.remove('pin'); if ($('cal').contains(document.activeElement)) document.activeElement.blur(); }
   });
 
   /* ---------- Formulário de retirada / edição ---------- */
@@ -519,7 +552,55 @@ var SENHA = '';
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   });
 
+  /* ---------- Personalização: bordas das caixas ---------- */
+  var BORDAS_PADRAO = {cor:'#dbe3e1', espessura:1, raio:10, estilo:'solid'};
+  var elCorBorda = $('corBorda'), elEspBorda = $('espBorda'), elRaioBorda = $('raioBorda'), elEstiloBorda = $('estiloBorda');
+  var outEsp = $('valorEspBorda'), outRaio = $('valorRaioBorda');
+
+  function aplicarBordas(cfg) {
+    cfg = cfg || BORDAS_PADRAO;
+    var cor = /^#[0-9A-Fa-f]{6}$/.test(cfg.cor || '') ? cfg.cor : BORDAS_PADRAO.cor;
+    var esp = Math.max(0, Math.min(6, Number(cfg.espessura) || BORDAS_PADRAO.espessura));
+    var raio = Math.max(0, Math.min(30, Number(cfg.raio) || BORDAS_PADRAO.raio));
+    var estilo = ['solid','dashed','dotted','double'].indexOf(cfg.estilo) >= 0 ? cfg.estilo : BORDAS_PADRAO.estilo;
+    document.documentElement.style.setProperty('--box-border-color', cor);
+    document.documentElement.style.setProperty('--box-border-width', esp + 'px');
+    document.documentElement.style.setProperty('--box-border-style', estilo);
+    document.documentElement.style.setProperty('--box-radius', raio + 'px');
+    elCorBorda.value = cor; elEspBorda.value = esp; elRaioBorda.value = raio; elEstiloBorda.value = estilo;
+    outEsp.textContent = esp + 'px'; outRaio.textContent = raio + 'px';
+    try { localStorage.setItem('bordas-carrinhos', JSON.stringify({cor:cor,espessura:esp,raio:raio,estilo:estilo})); } catch(e) {}
+  }
+
+  function carregarBordas() {
+    var cfg = BORDAS_PADRAO;
+    try { var salva = JSON.parse(localStorage.getItem('bordas-carrinhos') || 'null'); if (salva) cfg = Object.assign({}, BORDAS_PADRAO, salva); } catch(e) {}
+    aplicarBordas(cfg);
+  }
+
+  [elCorBorda, elEspBorda, elRaioBorda, elEstiloBorda].forEach(function(el){ el.addEventListener('input', function(){ aplicarBordas({cor:elCorBorda.value,espessura:elEspBorda.value,raio:elRaioBorda.value,estilo:elEstiloBorda.value}); }); });
+  elEstiloBorda.addEventListener('change', function(){ aplicarBordas({cor:elCorBorda.value,espessura:elEspBorda.value,raio:elRaioBorda.value,estilo:elEstiloBorda.value}); });
+  $('btnResetBordas').addEventListener('click', function(){ aplicarBordas(BORDAS_PADRAO); avisar('Bordas restauradas.'); });
+
   /* ---------- Conexão online (Firebase) ---------- */
+  /* ---------- Personalização: cor de fundo ---------- */
+  var COR_FUNDO_PADRAO = '#f3f5f4';
+  var elCorFundo = $('corFundo');
+  var elResetCor = $('btnResetCor');
+  function aplicarCorFundo(cor) {
+    if (!/^#[0-9A-Fa-f]{6}$/.test(cor)) cor = COR_FUNDO_PADRAO;
+    document.documentElement.style.setProperty('--bg', cor);
+    elCorFundo.value = cor;
+    try { localStorage.setItem('cor-fundo-carrinhos', cor); } catch (e) {}
+  }
+  function carregarCorFundo() {
+    var cor = COR_FUNDO_PADRAO;
+    try { var salva = localStorage.getItem('cor-fundo-carrinhos'); if (/^#[0-9A-Fa-f]{6}$/.test(salva || '')) cor = salva; } catch (e) {}
+    aplicarCorFundo(cor);
+  }
+  elCorFundo.addEventListener('input', function () { aplicarCorFundo(this.value); });
+  elResetCor.addEventListener('click', function () { aplicarCorFundo(COR_FUNDO_PADRAO); avisar('Cor de fundo restaurada.'); });
+
   function senhaOk() {
     if (!SENHA) return true;
     var ok = false;
@@ -544,7 +625,7 @@ var SENHA = '';
       renderTudo();
     }, function (e) { elConexao.textContent = 'Sem conexão com o registro (' + e.code + '). Verifique a internet e as regras do Firestore.'; });
   }
-  renderTudo(); iniciar();
+  carregarCorFundo(); renderTudo(); iniciar();
 })();
 </script>
 </body>
