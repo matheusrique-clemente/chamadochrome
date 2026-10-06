@@ -318,12 +318,7 @@ var SENHA = '';
       return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p>' + (ag ? '<span class="badge b-ag">📅 Agendado</span>' : '<span class="badge b-bad">🔴 Em uso</span>') + '</p>' +
         '<p>Turma: <strong>' + esc(r.turma) + '</strong></p><p>Responsável: <strong>' + esc(r.responsavel) + '</strong></p>' +
         '<p><strong>' + r.quantidade + '</strong> Chromebooks ' + (ag ? 'reservados' : 'retirados') + '</p><p>' + (ag ? 'Retirada prevista' : 'Retirada') + ': <strong>' + rotuloRet(r) + '</strong></p>' +
-        '<div class="btn">' +
-        (ag
-          ? (podeMexer(r) ? '<button data-acao="editar" data-id="' + r.id + '">Editar agendamento</button>' : '')
-          : (podeMexer(r) ? '<button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>' : '')) +
-        (ehAdmin() && !ag ? '<button data-acao="editar" data-id="' + r.id + '">✏️ Editar carrinho</button>' : '') +
-        '</div></article>';
+        '<div class="btn">' + (ag ? (podeMexer(r) ? '<button data-acao="editar" data-id="' + r.id + '">Editar agendamento</button>' : '') : (podeMexer(r) ? '<button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>' : '')) + '</div></article>';
     }).join('');
   }
   function filtrados() {
@@ -453,7 +448,7 @@ var SENHA = '';
     if (!reg && aulaAba !== 'todas') elFAula.value = aulaAba;
     opcoesAulas();
     if (!montarOpcoes(reg, carrinhoId)) { avisar('Nenhum carrinho disponível agora.'); return; }
-    elFCarrinho.disabled = !!reg;
+    elFCarrinho.disabled = !!reg && !ehAdmin();
     if (reg) {
       elTitulo.textContent = 'Editar registro'; elBtnSalvar.textContent = 'Salvar alterações';
       elFTurma.value = reg.turma; elFResp.value = reg.responsavel; elFQtd.value = reg.quantidade;
