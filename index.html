@@ -318,7 +318,7 @@ var SENHA = '';
       return '<article class="cart busy"><h3>' + car.nome + '</h3><p>' + POR + ' Chromebooks (' + faixa + ')</p><p>' + (ag ? '<span class="badge b-ag">📅 Agendado</span>' : '<span class="badge b-bad">🔴 Em uso</span>') + '</p>' +
         '<p>Turma: <strong>' + esc(r.turma) + '</strong></p><p>Responsável: <strong>' + esc(r.responsavel) + '</strong></p>' +
         '<p><strong>' + r.quantidade + '</strong> Chromebooks ' + (ag ? 'reservados' : 'retirados') + '</p><p>' + (ag ? 'Retirada prevista' : 'Retirada') + ': <strong>' + rotuloRet(r) + '</strong></p>' +
-        '<div class="btn">' + (ag ? '<button data-acao="editar" data-id="' + r.id + '">Editar agendamento</button>' : '<button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') + '</div></article>';
+        '<div class="btn">' + (ag ? (podeMexer(r) ? '<button data-acao="editar" data-id="' + r.id + '">Editar agendamento</button>' : '') : '<button class="primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') + '</div></article>';
     }).join('');
   }
   function filtrados() {
@@ -339,7 +339,7 @@ var SENHA = '';
       return '<tr><td>' + nomeCarrinho(r.carrinhoId) + '</td><td>' + esc(r.turma) + (r.observacao ? '<br><small style="color:var(--mut)">' + esc(r.observacao) + '</small>' : '') + '</td>' +
         '<td>' + esc(r.responsavel) + '</td><td>' + r.quantidade + '</td><td>' + rotuloRet(r) + '</td><td>' + rotulo(r.devolucaoData, r.devolucaoAula) + '</td><td>' + badge(r) + '</td>' +
         '<td class="act">' + ((devolvido(r) || r.data > hoje()) ? '' : '<button class="sm primary" data-acao="devolver" data-id="' + r.id + '">↩ Registrar devolução</button>') +
-        '<button class="sm" data-acao="editar" data-id="' + r.id + '">Editar</button><button class="sm danger" data-acao="excluir" data-id="' + r.id + '">Excluir</button></td></tr>';
+        (podeMexer(r) ? '<button class="sm" data-acao="editar" data-id="' + r.id + '">Editar</button><button class="sm danger" data-acao="excluir" data-id="' + r.id + '">Excluir</button>' : '') + '</td></tr>';
     }).join('');
   }
   function renderAbas() {
@@ -534,10 +534,15 @@ var SENHA = '';
     var b = ev.target.closest('button[data-acao]'); if (!b) return;
     var acao = b.getAttribute('data-acao'), id = b.getAttribute('data-id');
     if (acao === 'devolver') abrirDev(id);
-    else if (acao === 'editar') abrirForm(null, achar(id));
+    else if (acao === 'editar') {
+      var re = achar(id);
+      if (re && !podeMexer(re)) avisar('Só ' + re.responsavel + ' ou um administrador pode editar este registro.');
+      else abrirForm(null, re);
+    }
     else if (acao === 'retirar') abrirForm(parseInt(b.getAttribute('data-carrinho'), 10), null);
     else if (acao === 'excluir') {
       var r = achar(id);
+      if (r && !podeMexer(r)) { avisar('Só ' + r.responsavel + ' ou um administrador pode excluir este registro.'); return; }
       if (r && window.confirm('Excluir o registro de ' + nomeCarrinho(r.carrinhoId) + ' (' + r.turma + ')? Isso apaga para todos os computadores.')) {
         colecao.doc(id).delete().then(function () { avisar('Registro excluído.'); }, function (e) { avisar(erroEscrita(e)); });
       }
@@ -586,6 +591,7 @@ var SENHA = '';
   /* ---------- Usuário (nome salvo no computador) ---------- */
   var USER_KEY = 'usuario-carrinhos', ADMINS = ['matheus', 'isabel', 'tayla'], usuario = '';
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+  function podeMexer(r) { return ehAdmin() || (!!usuario && norm(r.responsavel) === norm(usuario)); }
   function ehAdmin() { return ADMINS.indexOf(norm(usuario).split(' ')[0]) !== -1; }
   function lerUsuario() { try { return localStorage.getItem(USER_KEY) || ''; } catch (e) { return ''; } }
   function salvarUsuario(n) {
