@@ -425,7 +425,19 @@ var SENHA = '';
   function montarOpcoes(reg, selecionado) {
     var ops = '', atual = selecionado || parseInt(elFCarrinho.value, 10) || 0;
     carrinhos.forEach(function (car) {
-      if (reg ? car.id === reg.carrinhoId : (!ocupado(car.id, elFTurnoSel.value, elFData.value, parseInt(elFAula.value, 10) || 0, parseInt(elFAulas.value, 10) || 1) && !bloqueado(car.id, elFData.value))) ops += '<option value="' + car.id + '">' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')</option>';
+      if (reg) {
+        if (ehAdmin()) {
+          var ocupadoPorOutro = ocupado(car.id, elFTurnoSel.value, elFData.value, parseInt(elFAula.value, 10) || 0, parseInt(elFAulas.value, 10) || 1, reg.id);
+          var bloqueadoAdmin = bloqueado(car.id, elFData.value);
+          var disabled = (ocupadoPorOutro || bloqueadoAdmin) && car.id !== reg.carrinhoId ? ' disabled' : '';
+          var aviso = ocupadoPorOutro ? ' — Em uso' : (bloqueadoAdmin ? ' — Indisponível nesta data' : '');
+          ops += '<option value="' + car.id + '"' + disabled + '>' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')' + aviso + '</option>';
+        } else if (car.id === reg.carrinhoId) {
+          ops += '<option value="' + car.id + '">' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')</option>';
+        }
+      } else if (!ocupado(car.id, elFTurnoSel.value, elFData.value, parseInt(elFAula.value, 10) || 0, parseInt(elFAulas.value, 10) || 1) && !bloqueado(car.id, elFData.value)) {
+        ops += '<option value="' + car.id + '">' + car.nome + ' (CB-' + String((car.id - 1) * POR + 1).padStart(3, '0') + ' a CB-' + String(car.id * POR).padStart(3, '0') + ')</option>';
+      }
     });
     elFCarrinho.innerHTML = ops || '<option value="">Nenhum carrinho disponível nesta data</option>';
     if (atual && ops.indexOf('value="' + atual + '"') !== -1) elFCarrinho.value = atual;
