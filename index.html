@@ -104,6 +104,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
       <h1>Carrinhos de Chromebooks</h1>
       <p class="sub">Sala de informática · registro online por carrinho e aula</p>
       <p class="sub" id="conexao">Conectando ao registro online…</p>
+      <p class="sub">👤 <strong id="usuarioNome"></strong> <button type="button" class="sm" id="btnTrocarNome">Trocar nome</button></p>
     </div>
     <div class="header-actions"><button class="primary" id="btnNova" disabled>+ Nova retirada</button></div>
   </header>
@@ -148,7 +149,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     </label>
     <div class="row">
       <label>Turma <input id="fTurma" required maxlength="60" placeholder="Ex.: 7º B"></label>
-      <label>Responsável <input id="fResp" required maxlength="80" placeholder="Ex.: Professor João"></label>
+      <label id="lblResp">Responsável <input id="fResp" required maxlength="80" list="listaResp" autocomplete="off" placeholder="Ex.: Professor João"><datalist id="listaResp"></datalist></label>
     </div>
     <div class="row">
       <label>Quantidade de Chromebooks <input id="fQtd" type="number" min="1" max="40" value="40" required></label>
@@ -176,6 +177,17 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     <div class="foot">
       <button type="button" id="dCancelar">Cancelar</button>
       <button type="submit" class="primary">↩ Registrar devolução</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="dlgNome">
+  <form id="formNome" novalidate>
+    <h3 id="nomeTitulo">Quem é você?</h3>
+    <label>Qual é o seu nome? <input id="nNome" maxlength="40" placeholder="Ex.: Roberta" autocomplete="off" required></label>
+    <p class="err" id="nErro" role="alert"></p>
+    <div class="foot">
+      <button type="button" id="nCancelar" hidden>Cancelar</button>
+      <button type="submit" class="primary">Continuar</button>
     </div>
   </form>
 </dialog>
@@ -212,7 +224,9 @@ var SENHA = '';
   'use strict';
   var NUM = 6, POR = 40, TOTAL = NUM * POR;
   var carrinhos = [];
-  var NOMES = ['Reserva', '6°', '7°', '8°', '9°', 'Reserva'];
+  var NOMES = ['Reserva(5°)', '6°Ano', '7°Ano', '8°Ano', '9°Ano', 'Reserva'];
+  /* Carrinho (id) → ano exigido na turma. Reservas (1 e 6) aceitam qualquer turma. */
+  var ANO_CARRINHO = { 2: 6, 3: 7, 4: 8, 5: 9 };
   for (var c = 1; c <= NUM; c++) carrinhos.push({ id: c, nome: NOMES[c - 1] });
   /* Primeiro carrinho (Reserva): bloqueado para retirada às segundas (1) e terças (2). */
   var BLOQ_ID = 1, BLOQ_DIAS = [1, 2];
@@ -427,7 +441,7 @@ var SENHA = '';
       elTitulo.textContent = 'Nova retirada'; elBtnSalvar.textContent = 'Registrar retirada';
       elFQtd.value = POR; elLblDev.hidden = true;
     }
-    elDlg.showModal(); elFTurma.focus();
+    configurarResp(reg); elDlg.showModal(); elFTurma.focus();
   }
 
   elForm.addEventListener('submit', async function (ev) {
@@ -436,6 +450,14 @@ var SENHA = '';
     var qtd = parseInt(elFQtd.value, 10), data = elFData.value, aula = parseInt(elFAula.value, 10), obs = elFObs.value.trim();
     if (!id) { elFErro.textContent = 'Escolha um carrinho.'; return; }
     if (!turma) { elFErro.textContent = 'Informe a turma.'; elFTurma.focus(); return; }
+    var anoExig = ANO_CARRINHO[id];
+    if (anoExig) {
+      var mAno = turma.match(/\d+/);
+      if (!mAno || parseInt(mAno[0].charAt(0), 10) !== anoExig) {
+        elFErro.textContent = 'O carrinho ' + nomeCarrinho(id) + ' é só para turmas do ' + anoExig + 'º ano (ex.: ' + anoExig + 'º B). Para outras turmas, use o carrinho do ano correto ou a Reserva.';
+        elFTurma.focus(); return;
+      }
+    }
     if (!resp) { elFErro.textContent = 'Informe o responsável.'; elFResp.focus(); return; }
     if (isNaN(qtd) || qtd < 1 || qtd > POR) { elFErro.textContent = 'A quantidade deve ficar entre 1 e ' + POR + '.'; elFQtd.focus(); return; }
     if (!data) { elFErro.textContent = 'Informe a data da retirada.'; elFData.focus(); return; }
@@ -540,7 +562,49 @@ var SENHA = '';
       renderTudo();
     }, function (e) { elConexao.textContent = 'Sem conexão com o registro (' + e.code + '). Verifique a internet e as regras do Firestore.'; });
   }
+
+  /* ---------- Usuário (nome salvo no computador) ---------- */
+  var USER_KEY = 'usuario-carrinhos', ADMINS = ['matheus', 'isabel', 'tayla'], usuario = '';
+  function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+  function ehAdmin() { return ADMINS.indexOf(norm(usuario).split(' ')[0]) !== -1; }
+  function lerUsuario() { try { return localStorage.getItem(USER_KEY) || ''; } catch (e) { return ''; } }
+  function salvarUsuario(n) {
+    usuario = n; $('usuarioNome').textContent = n;
+    try { localStorage.setItem(USER_KEY, n); } catch (e) {}
+  }
+  function configurarResp(reg) {
+    var adm = ehAdmin();
+    $('lblResp').hidden = !adm;
+    if (adm) {
+      var nomes = {};
+      registros.forEach(function (r) { if (r.responsavel) nomes[r.responsavel] = 1; });
+      $('listaResp').innerHTML = Object.keys(nomes).sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('');
+      elFResp.value = reg ? reg.responsavel : '';
+    } else {
+      elFResp.value = reg ? reg.responsavel : usuario;
+    }
+  }
+  var elDlgNome = $('dlgNome');
+  function abrirNome(obrig) {
+    $('nErro').textContent = ''; $('nNome').value = usuario; $('nCancelar').hidden = obrig;
+    $('nomeTitulo').textContent = obrig ? 'Bem-vindo(a)! Quem é você?' : 'Trocar nome';
+    elDlgNome.showModal(); $('nNome').focus(); $('nNome').select();
+  }
+  elDlgNome.addEventListener('cancel', function (ev) { if (!usuario) ev.preventDefault(); });
+  elDlgNome.addEventListener('close', function () { if (!usuario) abrirNome(true); });
+  $('formNome').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var n = $('nNome').value.replace(/\s+/g, ' ').trim();
+    if (n.length < 2) { $('nErro').textContent = 'Digite o seu nome.'; return; }
+    n = n.charAt(0).toUpperCase() + n.slice(1);
+    salvarUsuario(n); elDlgNome.close(); avisar('Olá, ' + n + '!');
+  });
+  $('nCancelar').addEventListener('click', function () { elDlgNome.close(); });
+  $('btnTrocarNome').addEventListener('click', function () { abrirNome(false); });
+
+  usuario = lerUsuario(); $('usuarioNome').textContent = usuario;
   renderTudo(); iniciar();
+  if (!usuario) abrirNome(true);
 })();
 </script>
 <!-- ===== Painel de personalização ===== -->
