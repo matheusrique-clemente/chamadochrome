@@ -231,7 +231,7 @@ var SENHA = '';
   /* Primeiro carrinho (Reserva): bloqueado para retirada às segundas (1) e terças (2). */
   var BLOQ_ID = 1, BLOQ_DIAS = [1, 2];
   function bloqueado(id, dataStr) {
-    if (id !== BLOQ_ID || !dataStr) return false;
+    if (id !== BLOQ_ID || !dataStr || ehAdmin()) return false;
     var p = String(dataStr).split('-'); if (p.length !== 3) return false;
     return BLOQ_DIAS.indexOf(new Date(+p[0], +p[1] - 1, +p[2]).getDay()) !== -1;
   }
@@ -597,7 +597,7 @@ var SENHA = '';
     var n = $('nNome').value.replace(/\s+/g, ' ').trim();
     if (n.length < 2) { $('nErro').textContent = 'Digite o seu nome.'; return; }
     n = n.charAt(0).toUpperCase() + n.slice(1);
-    salvarUsuario(n); elDlgNome.close(); avisar('Olá, ' + n + '!');
+    salvarUsuario(n); elDlgNome.close(); renderTudo(); avisar('Olá, ' + n + '!');
   });
   $('nCancelar').addEventListener('click', function () { elDlgNome.close(); });
   $('btnTrocarNome').addEventListener('click', function () { abrirNome(false); });
