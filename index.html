@@ -186,7 +186,7 @@ label{display:grid;gap:5px;font-weight:600;font-size:.95rem}
     <h3 id="nomeTitulo">Quem é você?</h3>
     <label>Qual é o seu nome? <input id="nNome" maxlength="40" placeholder="Ex.: Roberta" autocomplete="off" required></label>
     <p class="err" id="nErro" role="alert"></p>
-    <div class="foot">
+    <div class="foot">        
       <button type="button" id="nCancelar" hidden>Cancelar</button>
       <button type="submit" class="primary">Continuar</button>
     </div>
@@ -418,7 +418,7 @@ var SENHA = '';
     if (!ev.target.closest('#cal')) $('cal').classList.remove('pin');
   });
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape') { $('cal').classList.remove('pin'); if ($('cal').contains(document.activeElement)) document.activeElement.blur(); }
+    if (ev.key === 'Escape') { ('cal').classList.remove('pin');if(('cal').contains(document.activeElement)) document.activeElement.blur(); }
   });
 
   /* ---------- Formulário de retirada / edição ---------- */
@@ -605,7 +605,7 @@ var SENHA = '';
   }
 
   /* ---------- Usuário (nome salvo no computador) ---------- */
-  var USER_KEY = 'usuario-carrinhos', ADMINS = ['matheus', 'isabel', 'tayla'], usuario = '';
+  var USER_KEY = 'usuario-carrinhos', ADMINS = ['matheus', 'isabel', 'thayla'], usuario = '';
   function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
   function podeMexer(r) { return ehAdmin() || (!!usuario && norm(r.responsavel) === norm(usuario)); }
   function ehAdmin() { return ADMINS.indexOf(norm(usuario).split(' ')[0]) !== -1; }
@@ -824,3 +824,5 @@ var SENHA = '';
 </script>
 </body>
 </html>
+
+
