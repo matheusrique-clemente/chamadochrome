@@ -1,1 +1,169 @@
+/* Painel de personalização v2 – substitui o painel 🎨 antigo.
+   Basta incluir <script src="personalizacao.js"></script> antes de </body>. */
+(function () {
+  'use strict';
+  var KEY = 'tema-carrinhos-v2';
+  var PRESETS = {
+    padrao:   { nome: 'Automático', bg: '#f3f5f4', brand: '#0f5c63' },
+    escuro:   { nome: 'Escuro',     bg: '#0f1a1c', card: '#172427', ink: '#e8f0ef', mut: '#9bb0b3', line: '#2a3c3f', brand: '#3aa7b0' },
+    meianoite:{ nome: 'Meia-noite', bg: '#0b1020', card: '#151b30', ink: '#e6e9f5', mut: '#98a2c3', line: '#262e4d', brand: '#6c8cff' },
+    oceano:   { nome: 'Oceano',     bg: '#eaf3fb', card: '#ffffff', ink: '#12263a', mut: '#526a80', line: '#cfdeec', brand: '#1f6feb' },
+    floresta: { nome: 'Floresta',   bg: '#eef5ec', card: '#ffffff', ink: '#1b2a1c', mut: '#5a6e5b', line: '#d3e2cf', brand: '#2e7d32' },
+    sol:      { nome: 'Pôr do sol', bg: '#fdf1e7', card: '#ffffff', ink: '#33200f', mut: '#7a6250', line: '#f0d9c5', brand: '#d9531e' },
+    roxo:     { nome: 'Roxo',       bg: '#f4effb', card: '#ffffff', ink: '#271a3a', mut: '#6c5e82', line: '#e0d5f0', brand: '#7c3aed' }
+  };
+  var PADRAO = { preset: 'padrao', fundo: null, destaque: null, fonte: 100, borda: { cor: null, esp: 1, raio: 10, estilo: 'solid' } };
+  var st = clone(PADRAO);
+  var root = document.documentElement;
 
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function hexOk(h) { return /^#[0-9a-f]{6}$/i.test(h || ''); }
+  function num(v, min, max, def) { v = Number(v); return isFinite(v) ? Math.max(min, Math.min(max, v)) : def; }
+  function rgb(h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }
+  function hex(a) { return '#' + a.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
+  function mix(a, b, t) { var x = rgb(a), y = rgb(b); return hex(x.map(function (v, i) { return v + (y[i] - v) * t; })); }
+  function lum(h) {
+    var c = rgb(h).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  function sobre(h) { return lum(h) > 0.4 ? '#10201f' : '#ffffff'; }
+  function $(id) { return document.getElementById(id); }
+
+  /* ---- remove o painel antigo ---- */
+  var velho = document.getElementById('custom'); if (velho) velho.remove();
+
+  /* ---- estilos ---- */
+  var css = document.createElement('style');
+  css.textContent =
+    'html{font-size:calc(16px*var(--fs,1))}body{font-size:1rem}' +
+    '.primary,.aba[aria-selected="true"],.turno[aria-selected="true"],.cd.sel{color:var(--on-brand,#fff)}' +
+    '#tema{position:fixed;right:0;top:210px;z-index:40;padding-right:env(safe-area-inset-right,0px)}' +
+    '.tema-painel{position:fixed;top:0;right:0;bottom:0;width:min(340px,100vw);overflow-y:auto;background:var(--card);color:var(--ink);border-left:1px solid var(--line);box-shadow:-8px 0 28px rgba(0,0,0,.28);padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(105%);visibility:hidden;transition:transform .22s,visibility .22s}' +
+    '#tema.aberto .tema-painel{transform:none;visibility:visible}' +
+    '.tema-topo{display:flex;justify-content:space-between;align-items:center}.tema-topo h3{margin:0;font-size:1.1rem}' +
+    '.tema-sec{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:12px}.tema-sec h4{margin:0 0 8px;font-size:.9rem}' +
+    '.tema-lin{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:8px 0}.tema-lin>label{font-size:.88rem;font-weight:600}' +
+    '.tema-lin .c{display:flex;align-items:center;gap:6px}.tema-lin input[type=color]{width:44px;height:32px;padding:2px;cursor:pointer}' +
+    '.tema-lin input[type=range]{width:120px;padding:0}.tema-lin select{width:125px;padding:6px 8px}.tema-lin output{font-size:.8rem;color:var(--mut);min-width:38px;text-align:right}' +
+    '.sw-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.sw{padding:6px;display:grid;gap:4px;font-size:.78rem;text-align:center}' +
+    '.sw i{display:block;height:26px;border-radius:6px;border:1px solid rgba(128,128,128,.45)}.sw[aria-pressed="true"]{outline:3px solid var(--brand);outline-offset:1px}' +
+    '.tema-reset{width:100%;margin-top:12px}.tema-mini{padding:3px 8px;font-size:.8rem}' +
+    '@media(prefers-reduced-motion:reduce){.tema-painel{transition:none}}';
+  document.head.appendChild(css);
+
+  /* ---- HTML ---- */
+  var box = document.createElement('div'); box.id = 'tema';
+  box.innerHTML =
+    '<button type="button" class="customtab" id="temaAbrir" aria-label="Personalizar aparência" aria-expanded="false" title="Personalizar aparência">🎨</button>' +
+    '<aside class="tema-painel" role="dialog" aria-label="Personalização do site">' +
+    '<div class="tema-topo"><h3>🎨 Personalização</h3><button type="button" class="sm" id="temaFechar" aria-label="Fechar">✕</button></div>' +
+    '<div class="tema-sec"><h4>Tema</h4><div class="sw-grade" id="swGrade"></div></div>' +
+    '<div class="tema-sec"><h4>Cores</h4>' +
+    '<div class="tema-lin"><label for="tFundo">Fundo</label><div class="c"><input type="color" id="tFundo"></div></div>' +
+    '<div class="tema-lin"><label for="tDestaque">Destaque (botões)</label><div class="c"><input type="color" id="tDestaque"></div></div></div>' +
+    '<div class="tema-sec"><h4>Texto</h4>' +
+    '<div class="tema-lin"><label for="tFonte">Tamanho</label><div class="c"><input type="range" id="tFonte" min="85" max="130" step="5"><output id="oFonte"></output></div></div></div>' +
+    '<div class="tema-sec"><h4>Bordas das caixas</h4>' +
+    '<div class="tema-lin"><label for="tBCor">Cor</label><div class="c"><input type="color" id="tBCor"></div></div>' +
+    '<div class="tema-lin"><label for="tBEsp">Espessura</label><div class="c"><input type="range" id="tBEsp" min="0" max="6" step="1"><output id="oBEsp"></output></div></div>' +
+    '<div class="tema-lin"><label for="tBRaio">Arredondamento</label><div class="c"><input type="range" id="tBRaio" min="0" max="30" step="1"><output id="oBRaio"></output></div></div>' +
+    '<div class="tema-lin"><label for="tBEst">Estilo</label><select id="tBEst"><option value="solid">Sólida</option><option value="dashed">Tracejada</option><option value="dotted">Pontilhada</option><option value="double">Dupla</option></select></div></div>' +
+    '<button type="button" class="tema-reset" id="tReset">↩ Restaurar tudo</button></aside>';
+  document.body.appendChild(box);
+
+  var grade = $('swGrade');
+  grade.innerHTML = Object.keys(PRESETS).map(function (k) {
+    var p = PRESETS[k];
+    return '<button type="button" class="sw" data-p="' + k + '" aria-pressed="false"><i style="background:linear-gradient(90deg,' + p.bg + ' 0 62%,' + p.brand + ' 62%)"></i>' + p.nome + '</button>';
+  }).join('');
+
+  /* ---- aplicar ---- */
+  function aplicar(salvar) {
+    var s = root.style;
+    ['--bg', '--card', '--ink', '--mut', '--line', '--brand', '--brand-d', '--on-brand'].forEach(function (k) { s.removeProperty(k); });
+    var p = st.preset !== 'padrao' ? PRESETS[st.preset] : null;
+    if (p) {
+      s.setProperty('--bg', p.bg); s.setProperty('--card', p.card); s.setProperty('--ink', p.ink);
+      s.setProperty('--mut', p.mut); s.setProperty('--line', p.line);
+      s.setProperty('--brand', p.brand); s.setProperty('--brand-d', mix(p.brand, '#000000', 0.2)); s.setProperty('--on-brand', sobre(p.brand));
+    }
+    if (st.fundo) {
+      var b = st.fundo, escuro = lum(b) < 0.35;
+      s.setProperty('--bg', b);
+      s.setProperty('--card', escuro ? mix(b, '#ffffff', 0.08) : '#ffffff');
+      s.setProperty('--ink', escuro ? '#e8f0ef' : '#15282b');
+      s.setProperty('--mut', escuro ? '#a9bbbd' : '#5d6f72');
+      s.setProperty('--line', escuro ? mix(b, '#ffffff', 0.2) : mix(b, '#000000', 0.12));
+    }
+    if (st.destaque) {
+      s.setProperty('--brand', st.destaque); s.setProperty('--brand-d', mix(st.destaque, '#000000', 0.2)); s.setProperty('--on-brand', sobre(st.destaque));
+    }
+    s.setProperty('--fs', st.fonte / 100);
+    var bd = st.borda;
+    s.setProperty('--box-border-color', bd.cor || 'var(--line)');
+    s.setProperty('--box-border-width', bd.esp + 'px');
+    s.setProperty('--box-border-style', bd.estilo);
+    s.setProperty('--box-radius', bd.raio + 'px');
+    sincronizar();
+    if (salvar) { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} }
+  }
+  function corAtual(v) { var c = getComputedStyle(root).getPropertyValue(v).trim(); return hexOk(c) ? c : null; }
+  function sincronizar() {
+    Array.prototype.forEach.call(grade.children, function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-p') === st.preset)); });
+    $('tFundo').value = st.fundo || corAtual('--bg') || '#f3f5f4';
+    $('tDestaque').value = st.destaque || corAtual('--brand') || '#0f5c63';
+    $('tFonte').value = st.fonte; $('oFonte').textContent = st.fonte + '%';
+    $('tBCor').value = st.borda.cor || corAtual('--line') || '#dbe3e1';
+    $('tBEsp').value = st.borda.esp; $('oBEsp').textContent = st.borda.esp + 'px';
+    $('tBRaio').value = st.borda.raio; $('oBRaio').textContent = st.borda.raio + 'px';
+    $('tBEst').value = st.borda.estilo;
+  }
+
+  /* ---- eventos ---- */
+  grade.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-p]'); if (!b) return;
+    st.preset = b.getAttribute('data-p'); st.fundo = null; st.destaque = null; st.borda.cor = null; aplicar(true);
+  });
+  $('tFundo').addEventListener('input', function () { st.fundo = this.value; aplicar(true); });
+  $('tDestaque').addEventListener('input', function () { st.destaque = this.value; aplicar(true); });
+  $('tFonte').addEventListener('input', function () { st.fonte = num(this.value, 85, 130, 100); aplicar(true); });
+  $('tBCor').addEventListener('input', function () { st.borda.cor = this.value; aplicar(true); });
+  $('tBEsp').addEventListener('input', function () { st.borda.esp = num(this.value, 0, 6, 1); aplicar(true); });
+  $('tBRaio').addEventListener('input', function () { st.borda.raio = num(this.value, 0, 30, 10); aplicar(true); });
+  $('tBEst').addEventListener('change', function () { st.borda.estilo = this.value; aplicar(true); });
+  $('tReset').addEventListener('click', function () { st = clone(PADRAO); aplicar(true); });
+
+  function abrir(sim) {
+    box.classList.toggle('aberto', sim);
+    $('temaAbrir').setAttribute('aria-expanded', String(sim));
+    if (sim) $('temaFechar').focus();
+  }
+  $('temaAbrir').addEventListener('click', function () { abrir(!box.classList.contains('aberto')); });
+  $('temaFechar').addEventListener('click', function () { abrir(false); $('temaAbrir').focus(); });
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && box.classList.contains('aberto')) abrir(false); });
+  document.addEventListener('mousedown', function (ev) { if (box.classList.contains('aberto') && !box.contains(ev.target)) abrir(false); });
+
+  /* ---- carregar salvo (e migrar preferências antigas) ---- */
+  try {
+    var salvo = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (salvo) {
+      st.preset = PRESETS[salvo.preset] ? salvo.preset : 'padrao';
+      st.fundo = hexOk(salvo.fundo) ? salvo.fundo : null;
+      st.destaque = hexOk(salvo.destaque) ? salvo.destaque : null;
+      st.fonte = num(salvo.fonte, 85, 130, 100);
+      var b = salvo.borda || {};
+      st.borda.cor = hexOk(b.cor) ? b.cor : null;
+      st.borda.esp = num(b.esp, 0, 6, 1); st.borda.raio = num(b.raio, 0, 30, 10);
+      st.borda.estilo = ['solid', 'dashed', 'dotted', 'double'].indexOf(b.estilo) >= 0 ? b.estilo : 'solid';
+    } else {
+      var f = localStorage.getItem('cor-fundo-carrinhos'); if (hexOk(f) && f.toLowerCase() !== '#f3f5f4') st.fundo = f;
+      var ob = JSON.parse(localStorage.getItem('bordas-carrinhos') || 'null');
+      if (ob) {
+        st.borda.esp = num(ob.espessura, 0, 6, 1); st.borda.raio = num(ob.raio, 0, 30, 10);
+        if (hexOk(ob.cor) && ob.cor.toLowerCase() !== '#dbe3e1') st.borda.cor = ob.cor;
+        if (['solid', 'dashed', 'dotted', 'double'].indexOf(ob.estilo) >= 0) st.borda.estilo = ob.estilo;
+      }
+    }
+  } catch (e) {}
+  aplicar(false);
+})();
